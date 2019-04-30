@@ -129,3 +129,15 @@ TINYMCE_DEFAULT_CONFIG = {
     "width": 600,
     "height": 400,
 }
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# 发邮件的smpt服务器地址
+EMAIL_HOST = 'smtp.139.com'
+EMAIL_PORT = 25
+# EMAIL_USE_TLS = False
+# 发送邮件的邮箱
+EMAIL_HOST_USER = '13811097825@139.com'
+# 在邮箱中设置的客户端授权密码
+EMAIL_HOST_PASSWORD = 'wo15931325323'
+# 收件人看到的发件人
+EMAIL_FROM = '天天生鲜<13811097825@139.com>'

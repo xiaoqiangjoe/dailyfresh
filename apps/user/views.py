@@ -1,7 +1,12 @@
-from django.shortcuts import render, redirect, reverse
-import re                          # 校验邮箱
-from ..user.models import User
+import re  # 校验邮箱
+from ..user.models import User  # User表
+from django.conf import settings  # settings
 from django.views.generic import View
+from django.shortcuts import render, redirect, reverse, HttpResponse
+from itsdangerous import TimedJSONWebSignatureSerializer  # itsdangerous
+from itsdangerous import SignatureExpired
+from django.core.mail import send_mail  # 发邮件
+
 
 # Create your views here.
 
@@ -48,6 +53,8 @@ from django.views.generic import View
 
 
 class RegisterView(View):
+    '''注册'''
+
     def get(self, request, *args, **kwargs):
         return render(request, "df_user/register.html")
 
@@ -85,5 +92,53 @@ class RegisterView(View):
         # return render(request, 'df_user/login.html')
         user.is_active = 0
         user.save()
+        # 发送激活邮件，包含激活链接：http://127.0.0.1:8000/user/active/3
+        # 激活链接中需要包含用户的身份信息，并且要把身份信息进行加密
+
+        # 加密用户的身份信息，生成激活token
+        serializer = TimedJSONWebSignatureSerializer(settings.SECRET_KEY, 3600)
+        info = {"confirm": user.id}
+        token = serializer.dumps(info)  # bytes
+        token = token.decode()  # 默认是 Utf-8 可以不写
+
+        # 发邮件
+        # subject, message, from_email, recipient_list
+        subject = "天天生鲜欢迎信息"
+        message = ""
+        from_email = settings.EMAIL_FROM
+        recipient_list = [email]
+        html_message = "<h1>%s,欢迎您成为天天生鲜注册会员</h1>请点击下面链接激活您的账户<br/><a href='http://127.0.0.1:8000/user/active/%s'>http://127.0.0.1:8000/user/active/%s</a>" % (
+            username, token, token)
+
+        send_mail(subject, message, from_email, recipient_list, html_message=html_message)
 
         return redirect(reverse("df_goods:index"))
+
+
+class ActiveView(View):
+    '''用户激活'''
+
+    def get(self, request, token):
+        '''进行用户激活'''
+        serializer = TimedJSONWebSignatureSerializer(settings.SECRET_KEY, 3600)
+        try:
+            info = serializer.loads(token)
+            # 获取待激活用户的id
+            user_id = info["confirm"]
+            # 根据id 获取用户信息
+            user = User.objects.get(id=user_id)
+            user.is_active = 1
+            user.save()
+            # 跳转到登陆页面
+            return redirect(reverse("df_user:login"))
+
+        except SignatureExpired as e:
+            '''如果出现异常，激活链接已过期'''
+            return HttpResponse("激活链接已过期")
+
+
+class LoginView(View):
+    '''登陆'''
+
+    def get(self, request):
+        return render(request, "df_user/login.html")

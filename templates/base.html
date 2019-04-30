@@ -20,11 +20,11 @@
 				</div>
                 {% else %}
 				<div class="login_btn fl">
-{#                {% url "df_user:login" %}#}
-					<a href="">登录</a>
+
+					<a href=" {% url "df_user:login" %}">登录</a>
 					<span>|</span>
-{#                    {% url "df_user:register" %}#}
-					<a href="">注册</a>
+
+					<a href=" {% url "df_user:register" %}">注册</a>
 				</div>
                 {% endif %}
 				<div class="user_link fl">
