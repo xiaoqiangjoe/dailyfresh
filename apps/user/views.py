@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect, reverse, HttpResponse
 from itsdangerous import TimedJSONWebSignatureSerializer  # itsdangerous
 from itsdangerous import SignatureExpired
 from django.core.mail import send_mail  # 发邮件
+# from celery_tasks.tasks import send_register_active_email   # 发邮件
 
 
 # Create your views here.
@@ -103,6 +104,7 @@ class RegisterView(View):
 
         # 发邮件
         # subject, message, from_email, recipient_list
+
         subject = "天天生鲜欢迎信息"
         message = ""
         from_email = settings.EMAIL_FROM
@@ -112,6 +114,8 @@ class RegisterView(View):
 
         send_mail(subject, message, from_email, recipient_list, html_message=html_message)
 
+        # 发邮件，通过导入，装饰器装饰有了delay的方法    发出者
+        # send_register_active_email.delay(email, username, token)
         return redirect(reverse("df_goods:index"))
 
 
