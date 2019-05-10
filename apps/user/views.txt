@@ -1,5 +1,6 @@
 import re  # 校验邮箱
 from ..user.models import User  # User表
+# from django.contrib.auth.models import User
 from django.conf import settings  # settings
 from django.views.generic import View
 from django.shortcuts import render, redirect, reverse, HttpResponse
@@ -58,6 +59,7 @@ from django.contrib.auth import authenticate, login  # django 自带的验证模
 
 class RegisterView(View):
     '''注册'''
+
     def get(self, request, *args, **kwargs):
         return render(request, "df_user/register.html")
 
@@ -67,6 +69,7 @@ class RegisterView(View):
         confirm_pwd = request.POST.get("confirm_pwd")
         email = request.POST.get("email")
         allow = request.POST.get("allow")
+        print(username, password)
         # 数据校验
         if not all([username, password, email]):
             # 数据不完整
@@ -80,7 +83,6 @@ class RegisterView(View):
         # 校验是否同意协议
         if not allow:
             return render(request, "df_user/register.html", {"errmsg": "请同意协议"})
-        # 用户名存在的时候，
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
@@ -90,22 +92,12 @@ class RegisterView(View):
 
         # 进行业务处理：进行用户注册
         # User.objects.create(username=username, password=password, email=email)
-        user = User.objects.create_user( username=username, password=password, email=email)
-
-        # user = User()
-        # user.username = username
-        # user.email = email
-        # user.password = make_password(password)
-        # user.save()  # 数据保存
-
-
-
+        user = User.objects.create_user(username=username, password=password, email=email)
         # print('useruseriserusuur', user.password)
         # 返回应答,跳转到登陆页面
         # return render(request, 'df_user/login.html')
         user.is_active = 0
         user.save()
-
         # 发送激活邮件，包含激活链接：http://127.0.0.1:8000/user/active/3
         # 激活链接中需要包含用户的身份信息，并且要把身份信息进行加密
 
@@ -156,6 +148,7 @@ class ActiveView(View):
 
 class LoginView(View):
     '''登陆'''
+
     def get(self, request):
         return render(request, "df_user/login.html")
 
@@ -171,29 +164,27 @@ class LoginView(View):
         返回应答
         '''
         # 接收数据
-        username = request.POST.get('username')
-        password = request.POST.get('pwd')
-
+        username = request.POST.get('username','')
+        password = request.POST.get('pwd','')
+        print(username, password, 'dddddddddd')
 
         # 校验数据
         if not all([username, password]):
             return render(request, 'df_user/login.html', {'errmsg': '用户名密码错误'})
 
         # 业务处理：登陆校验
-        user1 = authenticate(username=username, password=password)    # 0
+        # user = authenticate(request, username=username, password=password)
+        user1 = authenticate(username=username, password=password)
+        print('111', user1)
 
-        if user1 is None:
-            is_active_bool = User.objects.filter(username=username).values('is_active').first()
-
-            # print(type(is_active_bool),is_active_bool['is_active'])
-            if is_active_bool['is_active'] == False:
-                return render(request, 'df_user/login.html', {'errmsg': '用户没有激活'})
-            else:
-                return render(request, 'df_user/login.html', {'errmsg': '用户名密码错误'})
-
-        else:
+        if user1 is not None:
             if user1.is_active:
+                print(234)
                 # 用户已激活
                 # 记录用户的登陆状态
                 login(request, user1)
                 return redirect(reverse("df_goods:index"))
+            else:
+                return render(request, 'df_user/login.html', {'errmsg': '用户没有激活'})
+        else:
+            return render(request, 'df_user/login.html', {'errmsg': '用户名密码错误111111'})

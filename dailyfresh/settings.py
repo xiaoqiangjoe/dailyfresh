@@ -30,8 +30,10 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'django.contrib.admin',
+
     'django.contrib.auth',
     'django.contrib.contenttypes',
+
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
@@ -141,3 +143,17 @@ EMAIL_HOST_USER = '13811097825@139.com'
 EMAIL_HOST_PASSWORD = 'wo15931325323'
 # 收件人看到的发件人
 EMAIL_FROM = '天天生鲜<13811097825@139.com>'
+
+# django配置redis
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://192.168.56.131/9",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"

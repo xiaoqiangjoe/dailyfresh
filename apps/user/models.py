@@ -9,7 +9,7 @@ from db.base_model import  BaseModel
 
 class User(AbstractUser, BaseModel):
     '''用户模型表'''
-
+    #is_anable = models.BooleanField()    #########################
     def generate_active_token(self):
         '''生成用户签名字符串'''
         serializer = Serializer(settings.SECRET_KEY, 3600)
@@ -30,6 +30,7 @@ class Address(BaseModel):
     zip_code = models.CharField(max_length=6, null=True, verbose_name="邮政编码")
     phone = models.CharField(max_length=11, verbose_name="联系电话")
     is_default = models.BooleanField(default=False, verbose_name="是否默认")
+
 
     class Meta:
         db_table = "db_address"
