@@ -6,8 +6,8 @@ from django.shortcuts import render, redirect, reverse, HttpResponse
 from itsdangerous import TimedJSONWebSignatureSerializer  # itsdangerous 发邮件
 from itsdangerous import SignatureExpired
 from django.core.mail import send_mail  # 发邮件
-from django.contrib.auth import authenticate, login  # django 自带的验证模块  login 保存在session
-
+from django.contrib.auth import authenticate, login, logout # django 自带的验证模块  login 保存在session
+from utils.mixin import LoginRequiredMixin   # 需要登录之后访问
 
 # from celery_tasks.tasks import send_register_active_email   # 发邮件
 
@@ -90,7 +90,7 @@ class RegisterView(View):
 
         # 进行业务处理：进行用户注册
         # User.objects.create(username=username, password=password, email=email)
-        user = User.objects.create_user( username=username, password=password, email=email)
+        user = User.objects.create_user(request,username=username, password=password, email=email)
 
         # user = User()
         # user.username = username
@@ -157,8 +157,17 @@ class ActiveView(View):
 class LoginView(View):
     '''登陆'''
     def get(self, request):
-        return render(request, "df_user/login.html")
+        # print('request.COOKIES', request.COOKIES)
+        # print( request.COOKIES.get('username'))
+        if 'username' in request.COOKIES:
+            username = request.COOKIES.get('username')
+            checked='checked'
+        else:
+            username = ''
+            checked = ''
 
+
+        return render(request, "df_user/login.html",{'username':username, 'checked':checked})
     def post(self, request):
         '''登陆校验'''
         '''
@@ -173,12 +182,9 @@ class LoginView(View):
         # 接收数据
         username = request.POST.get('username')
         password = request.POST.get('pwd')
-
-
         # 校验数据
         if not all([username, password]):
             return render(request, 'df_user/login.html', {'errmsg': '用户名密码错误'})
-
         # 业务处理：登陆校验
         user1 = authenticate(username=username, password=password)    # 0
 
@@ -190,10 +196,62 @@ class LoginView(View):
                 return render(request, 'df_user/login.html', {'errmsg': '用户没有激活'})
             else:
                 return render(request, 'df_user/login.html', {'errmsg': '用户名密码错误'})
-
         else:
             if user1.is_active:
                 # 用户已激活
                 # 记录用户的登陆状态
                 login(request, user1)
-                return redirect(reverse("df_goods:index"))
+
+                # 获取url上的next
+                next_url=request.GET.get('next', reverse("df_goods:index"))
+                # print('nnn',next_url)
+                response = redirect(next_url)
+
+                remember = request.POST.get('remember')
+                if remember=='on':
+                    response.set_cookie('username', username, max_age=7*24*3600)
+                else:
+                    response.delete_cookie('username')
+                return response
+
+
+class LogoutView(View):
+    '''登出'''
+    def get(self, request):
+        logout(request)
+        return redirect(reverse("df_goods:index"))
+
+# /user
+class UserInfoView(LoginRequiredMixin, View):
+    '''用户信息页'''
+
+    def get(self, request):
+
+        # request.user.is_anthenticated()
+        # 除了你给模板文件传递的模板变量之外，django框架会把request.user也传递给模板文件
+        return render(request, "df_user/user_center_info.html")
+
+    def post(self, request):
+        pass
+
+# /user/order
+class UserOrderInfoView(LoginRequiredMixin, View):
+    '''用户中心---订单页'''
+
+    def get(self, request):
+        print(123)
+        return render(request, "df_user/user_center_order.html")
+
+    def post(self, request):
+        pass
+
+# /user/address
+class AddressView(LoginRequiredMixin, View):
+    '''用户中心---信息页'''
+
+    def get(self, request):
+        return render(request, "df_user/user_center_site.html")
+
+    def post(self, request):
+        pass
+

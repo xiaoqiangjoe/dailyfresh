@@ -6,37 +6,33 @@
 		<div class="header">
 			<div class="welcome fl">欢迎来到天天生鲜!</div>
 			<div class="fr">
-{#                判断是否已经登录#}
-                {% if request.session.user_name|default:'' != '' %}
-{#                    default过滤器进行判断如果request.session.user_name不等于空字符串则用户登陆状态为true#}
-{#                    也就是说当用户为已登陆状态时则显示用户名#}
+                {# 判断是否已经登录#}
+                {% if request.user.is_authenticated %}
 
-{#                    class="login_info fl"#}
-
-				<div class="login_btn fl">欢迎您：<em>{{ request.session.user_name }}</em>
+				<div class="login_btn fl">欢迎您：<em>{{request.user.username }}</em>
                     <span>|</span>
-{#                    {% url "df_user:logout" %}#}
-                    <em><a href="">退出</a></em>
+                    <em><a href="{% url "df_user:logout" %}">退出</a></em>
 				</div>
                 {% else %}
-				<div class="login_btn fl">
 
+				<div class="login_btn fl">
 					<a href=" {% url "df_user:login" %}">登录</a>
 					<span>|</span>
 
 					<a href=" {% url "df_user:register" %}">注册</a>
 				</div>
                 {% endif %}
+
 				<div class="user_link fl">
 					<span>|</span>
-{#                    {% url "df_user:info" %}#}
-					<a href="">用户中心</a>
+
+					<a href="{% url "df_user:user" %}">用户中心</a>
 					<span>|</span>
 {#                    {% url "df_cart:cart" %}#}
 					<a href="">我的购物车</a>
 					<span>|</span>
 {#                    {% url "df_user:order" 1 %}#}
-					<a href="">我的订单</a>
+					<a href="{% url "df_user:order"  %}">我的订单</a>
 				</div>
 			</div>
 		</div>

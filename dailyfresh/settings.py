@@ -145,6 +145,7 @@ EMAIL_HOST_PASSWORD = 'wo15931325323'
 EMAIL_FROM = '天天生鲜<13811097825@139.com>'
 
 # django配置redis
+'''
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -157,3 +158,6 @@ CACHES = {
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
+'''
+# 默认跳转的url
+LOGIN_URL = '/user/login'
