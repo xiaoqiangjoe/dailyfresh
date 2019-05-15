@@ -232,8 +232,10 @@ class UserInfoView(LoginRequiredMixin, View):
 
     def get(self, request):
         # request.user.is_anthenticated()
-        # 除了你给模板文件传递的模板变量之外，django框架会把request.user也传递给模板文件
-        return render(request, "df_user/user_center_info.html")
+        # 除了你给模板文件传递的模板变量之外，django框架会把request.
+        user = request.user
+        address = Address.objects.get_default_address(user)
+        return render(request, "df_user/user_center_info.html", {'address':address})
 
     def post(self, request):
         pass
@@ -244,7 +246,7 @@ class UserOrderInfoView(LoginRequiredMixin, View):
     '''用户中心---订单页'''
 
     def get(self, request):
-        print(123)
+
         return render(request, "df_user/user_center_order.html")
 
     def post(self, request):
