@@ -1,13 +1,14 @@
 import re  # 校验邮箱
-from ..user.models import User  # User表
+from ..user.models import User, Address  # User表, 地址表
 from django.conf import settings  # settings
 from django.views.generic import View
 from django.shortcuts import render, redirect, reverse, HttpResponse
 from itsdangerous import TimedJSONWebSignatureSerializer  # itsdangerous 发邮件
 from itsdangerous import SignatureExpired
 from django.core.mail import send_mail  # 发邮件
-from django.contrib.auth import authenticate, login, logout # django 自带的验证模块  login 保存在session
-from utils.mixin import LoginRequiredMixin   # 需要登录之后访问
+from django.contrib.auth import authenticate, login, logout  # django 自带的验证模块  login 保存在session
+from utils.mixin import LoginRequiredMixin  # 需要登录之后访问
+
 
 # from celery_tasks.tasks import send_register_active_email   # 发邮件
 
@@ -58,6 +59,7 @@ from utils.mixin import LoginRequiredMixin   # 需要登录之后访问
 
 class RegisterView(View):
     '''注册'''
+
     def get(self, request, *args, **kwargs):
         return render(request, "df_user/register.html")
 
@@ -90,7 +92,7 @@ class RegisterView(View):
 
         # 进行业务处理：进行用户注册
         # User.objects.create(username=username, password=password, email=email)
-        user = User.objects.create_user(request,username=username, password=password, email=email)
+        user = User.objects.create_user(request, username=username, password=password, email=email)
 
         # user = User()
         # user.username = username
@@ -156,18 +158,19 @@ class ActiveView(View):
 
 class LoginView(View):
     '''登陆'''
+
     def get(self, request):
         # print('request.COOKIES', request.COOKIES)
         # print( request.COOKIES.get('username'))
         if 'username' in request.COOKIES:
             username = request.COOKIES.get('username')
-            checked='checked'
+            checked = 'checked'
         else:
             username = ''
             checked = ''
 
+        return render(request, "df_user/login.html", {'username': username, 'checked': checked})
 
-        return render(request, "df_user/login.html",{'username':username, 'checked':checked})
     def post(self, request):
         '''登陆校验'''
         '''
@@ -186,7 +189,7 @@ class LoginView(View):
         if not all([username, password]):
             return render(request, 'df_user/login.html', {'errmsg': '用户名密码错误'})
         # 业务处理：登陆校验
-        user1 = authenticate(username=username, password=password)    # 0
+        user1 = authenticate(username=username, password=password)  # 0
 
         if user1 is None:
             is_active_bool = User.objects.filter(username=username).values('is_active').first()
@@ -203,13 +206,13 @@ class LoginView(View):
                 login(request, user1)
 
                 # 获取url上的next
-                next_url=request.GET.get('next', reverse("df_goods:index"))
+                next_url = request.GET.get('next', reverse("df_goods:index"))
                 # print('nnn',next_url)
                 response = redirect(next_url)
 
                 remember = request.POST.get('remember')
-                if remember=='on':
-                    response.set_cookie('username', username, max_age=7*24*3600)
+                if remember == 'on':
+                    response.set_cookie('username', username, max_age=7 * 24 * 3600)
                 else:
                     response.delete_cookie('username')
                 return response
@@ -217,22 +220,24 @@ class LoginView(View):
 
 class LogoutView(View):
     '''登出'''
+
     def get(self, request):
         logout(request)
         return redirect(reverse("df_goods:index"))
+
 
 # /user
 class UserInfoView(LoginRequiredMixin, View):
     '''用户信息页'''
 
     def get(self, request):
-
         # request.user.is_anthenticated()
         # 除了你给模板文件传递的模板变量之外，django框架会把request.user也传递给模板文件
         return render(request, "df_user/user_center_info.html")
 
     def post(self, request):
         pass
+
 
 # /user/order
 class UserOrderInfoView(LoginRequiredMixin, View):
@@ -245,13 +250,56 @@ class UserOrderInfoView(LoginRequiredMixin, View):
     def post(self, request):
         pass
 
+
 # /user/address
 class AddressView(LoginRequiredMixin, View):
     '''用户中心---信息页'''
 
     def get(self, request):
-        return render(request, "df_user/user_center_site.html")
+        # 获取用户的默认地址
+        user = request.user
+        # try:
+        #     address = Address.objects.get(user=user, is_default=True)
+        # except Address.DoesNotExist:
+        #     address = None
+        address = Address.objects.get_default_address(user)
+        return render(request, "df_user/user_center_site.html", {'address': address})
 
     def post(self, request):
-        pass
+        receiver = request.POST.get('receiver')
+        phone = request.POST.get('phone')
+        zip_code = request.POST.get('zip_code')
+        addr = request.POST.get('addr')
 
+        # 校验数据
+        if not all([receiver, phone, addr]):  # zip_code 表里可以为空，我们就可以不校验
+            return render(request, "df_user/user_center_site.html", {'errormsg': '数据不完整'})
+
+        # 校验手机号
+        if not re.match(r'^1[3|4|5|7|8][0-9]{9}$', phone):
+            return render(request, "df_user/user_center_site.html", {'errormsg': '手机格式不正确'})
+
+        # 判断是否是默认的地址
+        user = request.user
+        # try:
+        #     address = Address.objects.get(user=user, is_default=True)
+        #     print('postaddr', address)
+        # except Address.DoesNotExist:
+        #     address = None
+        address = Address.objects.get_default_address(user)
+        if address:
+            is_default = False
+        else:
+            is_default = True
+
+        # 存入数据库
+
+        Address.objects.create(user=user,
+                               receiver=receiver,
+                               phone=phone,
+                               zip_code=zip_code,
+                               addr=addr,
+                               is_default=is_default
+                               )
+        # 返回数据，刷新页面
+        return redirect(reverse('df_user:address'))
